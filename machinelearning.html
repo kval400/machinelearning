@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width">
+  <title>My Project</title>
+  <link href="style.css" rel="stylesheet" type="text/css" />
+</head>
+
+<body>
+    <!--Title-->
+    <h1>Real-Time Image Classifier</h1>
+    <!--Description-->
+    <p>Use this model to classify roses and bald eagles in real time using your webcam!</p>
+    <!--Buttons-->
+    <button type="button" aria-label="Start Webcam" onclick="init()">Start</button>
+    <button type="button" aria-label="Stop Webcam" onclick="stopWebcam()">Stop Webcam</button>
+    <!--Containers-->
+    <div id="webcam-container"></div>
+    <div id="label-container"></div>
+    <!--Loading Indicator-->
+    <div id="loading-indicator" style="display:none;">
+        <p>Loading model... Please wait.</p>
+    </div>
+    <!--TensorFlow and Teachable Machine Libraries-->
+    <script src="https://cdn.jsdelivr.net/npm/@tensorflow/tfjs@latest/dist/tf.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@teachablemachine/image@latest/dist/teachablemachine-image.min.js"></script>
+    <!--JavaScript Code-->
+    <script type="text/javascript">
+        // More API functions here:
+        // https://github.com/googlecreativelab/teachablemachine-community/tree/master/libraries/image
+    
+        // the link to your model provided by Teachable Machine export panel
+        const URL = "https://teachablemachine.withgoogle.com/models/hWydacN-x/";
+    
+        let model, webcam, labelContainer, maxPredictions;
+    
+        // Load the image model and setup the webcam
+        async function init() {
+            const loadingIndicator = document.getElementById("loading-indicator");
+            loadingIndicator.style.display = "block";
+            const modelURL = URL + "model.json";
+            const metadataURL = URL + "metadata.json";
+            
+            try{
+            // load the model and metadata
+            // Refer to tmImage.loadFromFiles() in the API to support files from a file picker
+            // or files from your local hard drive
+            // Note: the pose library adds "tmImage" object to your window (window.tmImage)
+            model = await tmImage.load(modelURL, metadataURL);
+            maxPredictions = model.getTotalClasses();
+    
+            // Convenience function to setup a webcam
+            const flip = true; // whether to flip the webcam
+            webcam = new tmImage.Webcam(400, 400, flip); // Increased sixe for better visibility
+            await webcam.setup(); // request access to the webcam
+            await webcam.play();
+            window.requestAnimationFrame(loop);
+    
+            // append elements to the DOM
+            document.getElementById("webcam-container").appendChild(webcam.canvas);
+            labelContainer = document.getElementById("label-container");
+            for (let i = 0; i < maxPredictions; i++) { // and class labels
+                labelContainer.appendChild(document.createElement("div"));
+            }
+        }  catch (error) {
+            console.error("Webcam setup failed:", error);
+            alert("Failed to access webcam. Please check your permissions.");
+        } finally {
+            loadingIndicator.style.display = "none";
+        }
+    }
+        async function loop() {
+            webcam.update(); // update the webcam frame
+            await predict();
+            window.requestAnimationFrame(loop);
+        }
+    
+        // run the webcam image through the image model
+        async function predict() {
+            // predict can take in an image, video or canvas html element
+            const prediction = await model.predict(webcam.canvas);
+            for (let i = 0; i < maxPredictions; i++) {
+                const classPrediction =
+                    prediction[i].className + ": " + prediction[i].probability.toFixed(2);
+                labelContainer.childNodes[i].innerHTML = classPrediction;
+            }
+        }
+        function stopWebcam(){
+            if (webcam){
+                webcam.stop();
+                alert("Webcam has been stopped.");
+                document.getElementById("webcam-container").innerHTML="";//Clears webcam canvas when camera has been stopped 
+            }
+        } //For Bonus Marks!!!!!!!!
+
+    </script>
+ <script src="myscripts.js"></script>
+  
+</body>
+  
+
+</html>
+
